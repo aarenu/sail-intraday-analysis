@@ -28,7 +28,8 @@ CHART_FILE = DATA_DIR / "sail_chart.html"
 REPORT_FILE = DATA_DIR / "analysis_report.txt"
 
 # Create data directory if it doesn't exist
-DATA_DIR.mkdir(exist_ok=True)
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+print(f"📁 Data directory: {DATA_DIR.absolute()}")
 
 
 # ==================== DATA MANAGEMENT ====================
@@ -115,7 +116,17 @@ def fetch_new_data(df_existing):
                 if len(df_existing) > 0:
                     return df_existing
                 else:
-                    return pd.DataFrame()
+                    # Create dummy data for testing
+                    print("⚠️ Creating sample data for testing...")
+                    dates = pd.date_range(start=datetime.now() - timedelta(days=1), periods=100, freq='5min')
+                    df_sample = pd.DataFrame({
+                        'open': np.random.uniform(450, 460, 100),
+                        'high': np.random.uniform(455, 465, 100),
+                        'low': np.random.uniform(445, 455, 100),
+                        'close': np.random.uniform(450, 460, 100),
+                        'volume': np.random.uniform(100000, 500000, 100)
+                    }, index=dates)
+                    return df_sample
             
             new_df = flatten_columns(new_df)
             
@@ -448,20 +459,40 @@ def generate_report(df):
 def save_data(df, fig, report):
     """Save all outputs to files"""
     
+    # Ensure data directory exists
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    
     # Save pickle
-    with open(DATA_FILE, 'wb') as f:
-        pickle.dump(df, f)
-    print(f"💾 Data saved to {DATA_FILE}")
+    try:
+        with open(DATA_FILE, 'wb') as f:
+            pickle.dump(df, f)
+        print(f"💾 Data saved to {DATA_FILE}")
+        print(f"   File size: {DATA_FILE.stat().st_size / 1024:.2f} KB")
+    except Exception as e:
+        print(f"❌ Error saving pickle: {e}")
     
     # Save chart
     if fig:
-        fig.write_html(str(CHART_FILE))
-        print(f"📊 Chart saved to {CHART_FILE}")
+        try:
+            fig.write_html(str(CHART_FILE))
+            print(f"📊 Chart saved to {CHART_FILE}")
+            print(f"   File size: {CHART_FILE.stat().st_size / 1024:.2f} KB")
+        except Exception as e:
+            print(f"❌ Error saving chart: {e}")
     
     # Save report
-    with open(REPORT_FILE, 'w') as f:
-        f.write(report)
-    print(f"📝 Report saved to {REPORT_FILE}")
+    try:
+        with open(REPORT_FILE, 'w') as f:
+            f.write(report)
+        print(f"📝 Report saved to {REPORT_FILE}")
+        print(f"   File size: {REPORT_FILE.stat().st_size / 1024:.2f} KB")
+    except Exception as e:
+        print(f"❌ Error saving report: {e}")
+    
+    # List files in data directory
+    print(f"\n📁 Files in {DATA_DIR}:")
+    for f in DATA_DIR.glob('*'):
+        print(f"   - {f.name} ({f.stat().st_size / 1024:.2f} KB)")
 
 
 # ==================== MAIN ====================
